@@ -1,7 +1,7 @@
 import { Component, OnInit, HostListener, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DiceComponent } from '../dice/dice.component';
-import { AuthService } from '../auth.service';
+import { AuthService } from '../services/auth.service';
 import { UserService } from '../services/user.service';
 import { Router } from '@angular/router';
 import { TokenData } from '../token-data';
@@ -65,6 +65,10 @@ export class DashboardComponent implements OnInit {
     } catch (error) {
       console.error('Error al cerrar sesión:', error);
     }
+  }
+
+  navegarAJuego(): void {
+    this.router.navigate(['/game']);
   }
 
   navegarA(ruta: string): void {
