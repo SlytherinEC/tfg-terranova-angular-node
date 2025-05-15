@@ -4,7 +4,7 @@ const CapitanModel = require('../models/CapitanModel'); // Asumiendo que existe
 const MapaModel = require('../models/MapaModel'); // Asumiendo que existe
 const InventarioModel = require('../models/InventarioModel'); // Asumiendo que existe
 const EstadoJuegoModel = require('../models/EstadoJuegoModel'); // Asumiendo que existe
-const MapGeneratorService = require('./MapGeneratorService'); // Asumiendo que existe
+const MapaService = require('./MapaService');
 
 const PartidaService = {
   /**
@@ -16,7 +16,7 @@ const PartidaService = {
       const id_partida = await PartidaModel.crear(id_usuario, dificultad);
       
       // 2. Generar y guardar mapa
-      const { mapa, adyacencias } = await MapGeneratorService.generarMapaHexagonal();
+      const { mapa, adyacencias } = await MapaService.generarMapaHexagonal();
       await MapaModel.crear(id_partida, mapa, adyacencias);
       
       // 3. Obtener partida completa para devolver
