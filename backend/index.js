@@ -17,6 +17,10 @@ app.use('/api/admin', require('./routes/admin'));
 // Nuevas rutas refactorizadas
 app.use('/api/game', require('./routes/partidasRoutes'));
 app.use('/api/game', require('./routes/mapaRoutes'));
+// Nueva ruta para el capitán
+app.use('/api/game', require('./routes/capitanRoutes'));
+// Nueva ruta para el inventario
+app.use('/api/game', require('./routes/inventarioRoutes'));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
