@@ -14,7 +14,9 @@ app.use(express.json());
 
 app.use('/api/usuarios', require('./routes/usuarios'));
 app.use('/api/admin', require('./routes/admin'));
-app.use('/api/game', require('./routes/game'));
+// Nuevas rutas refactorizadas
+app.use('/api/game', require('./routes/partidasRoutes'));
+app.use('/api/game', require('./routes/mapaRoutes'));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
