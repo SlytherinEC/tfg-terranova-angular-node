@@ -37,36 +37,92 @@ export class HexMapComponent implements OnInit, OnChanges {
   constructor() { }
 
   ngOnInit(): void {
-    if (this.mapa.length === 0) {
-      this.crearMapaInicial();
-    } else {
-      this.procesarMapa();
-    }
+    // if (this.mapa.length === 0) {
+    //   this.crearMapaInicial();
+    // } else {
+    //   this.procesarMapa();
+    // }
+
+    console.log('hex-map inicializado con mapa:', this.mapa);
+    this.procesarMapa();
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['mapa'] && !changes['mapa'].firstChange) {
+    // if (changes['mapa'] && !changes['mapa'].firstChange) {
+    //   this.procesarMapa();
+    // }
+    if (changes['mapa']) {
+      console.log('Cambios en el mapa detectados:', this.mapa);
       this.procesarMapa();
     }
   }
 
   procesarMapa(): void {
-    // Reorganizamos el mapa plano en la estructura de filas para la visualización
+    console.log('Procesando mapa con estructura:', this.mapa);
+    
+    // Inicializar filas vacías
     this.mapRows = [];
+    
+    // Determinar el tipo de mapa (antiguo o nuevo formato)
+    let estructuraCeldas: HexCell[][] = [];
+    
+    if (!this.mapa) {
+      console.warn('Mapa no definido');
+      this.crearMapaInicial();
+      return;
+    }
+    
+    if (Array.isArray(this.mapa)) {
+      // Formato antiguo - el mapa es directamente un array de filas
+      console.log('Usando formato antiguo de mapa (array)');
+      estructuraCeldas = this.mapa;
+    } else if (this.mapa.estructura_celdas && Array.isArray(this.mapa.estructura_celdas)) {
+      // Formato nuevo - el mapa es un objeto con propiedad estructura_celdas
+      console.log('Usando formato nuevo de mapa (objeto con estructura_celdas)');
+      estructuraCeldas = this.mapa.estructura_celdas;
+    } else {
+      console.error('Formato de mapa no reconocido:', this.mapa);
+      this.crearMapaInicial();
+      return;
+    }
+    
+    if (estructuraCeldas.length === 0) {
+      console.warn('estructura_celdas vacía, creando mapa inicial');
+      this.crearMapaInicial();
+      return;
+    }
 
+    // Reorganizar la estructura en filas para visualización
     for (let y = 0; y < this.hexesPerRow.length; y++) {
       const row: HexCell[] = [];
 
-      for (let x = 0; x < this.hexesPerRow[y]; x++) {
-        // Encontramos la celda correspondiente en el mapa plano
-        const found = this.mapa.find(celda =>
-          celda.find(c => c.x === x && c.y === y)
-        );
+      // Buscar la fila correspondiente en estructura_celdas
+      const filaExistente = estructuraCeldas.find(fila => 
+        fila.length > 0 && fila[0].y === y
+      );
 
-        if (found) {
-          row.push(found.find(c => c.x === x && c.y === y)!);
-        } else {
-          // Si no existe, creamos una celda vacía
+      if (filaExistente && filaExistente.length > 0) {
+        // Si existe la fila, añadir sus celdas
+        for (let x = 0; x < this.hexesPerRow[y]; x++) {
+          const celdaExistente = filaExistente.find(c => c.x === x && c.y === y);
+          
+          if (celdaExistente) {
+            row.push(celdaExistente);
+          } else {
+            // Si no existe esa celda en la fila, crear una celda vacía
+            row.push({
+              x,
+              y,
+              tipo: 'vacio',
+              explorado: false,
+              puerta_bloqueada: false,
+              codigos_requeridos: 0
+            });
+          }
+        }
+      } else {
+        // Si no existe la fila, crear celdas vacías para esa fila
+        for (let x = 0; x < this.hexesPerRow[y]; x++) {
           row.push({
             x,
             y,
@@ -80,8 +136,10 @@ export class HexMapComponent implements OnInit, OnChanges {
 
       this.mapRows.push(row);
     }
+    
+    console.log('Mapa procesado, filas:', this.mapRows.length);
   }
-
+  
   crearMapaInicial(): void {
     // Mapeo de los tipos de celdas por fila
     const mapDefinition = [

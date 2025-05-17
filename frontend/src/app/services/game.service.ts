@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable, tap } from 'rxjs';
+import { BehaviorSubject, catchError, Observable, tap, throwError } from 'rxjs';
 import { AuthService } from './auth.service';
 
 @Injectable({
@@ -31,7 +31,37 @@ export class GameService {
       headers: this.authService.obtenerHeadersAuth()
     }).pipe(
       tap((response: any) => {
-        this.gameStateSubject.next(response.partida);
+        // Verificar la estructura de la respuesta
+        console.log('Respuesta del servidor para nueva partida:', response);
+
+        if (response.partida) {
+          // Asegurarnos de que el mapa existe y tiene la estructura esperada
+          if (!response.partida.mapa) {
+            console.warn('La partida no contiene datos del mapa');
+            // Inicializar un mapa vacío para evitar errores
+            response.partida.mapa = {
+              posicion_actual: { x: 0, y: 0 },
+              estructura_celdas: [],
+              adyacencias: {}
+            };
+          } else if (Array.isArray(response.partida.mapa)) {
+            // Adaptar formato antiguo (array) al nuevo formato (objeto)
+            console.warn('Formato de mapa incorrecto, adaptando...');
+            response.partida.mapa = {
+              posicion_actual: response.partida.posicion_actual || { x: 0, y: 0 },
+              estructura_celdas: response.partida.mapa,
+              adyacencias: response.partida.adyacencias || {}
+            };
+          }
+
+          this.gameStateSubject.next(response.partida);
+        } else {
+          console.error('Formato de respuesta incorrecto:', response);
+        }
+      }),
+      catchError(error => {
+        console.error('Error al crear partida:', error);
+        return throwError(() => new Error('Error al crear partida: ' + error.message));
       })
     );
   }
@@ -49,7 +79,30 @@ export class GameService {
       headers: this.authService.obtenerHeadersAuth()
     }).pipe(
       tap((partida: any) => {
+        console.log('Partida cargada:', partida);
+
+        // Verificar y adaptar estructura del mapa si es necesario
+        if (!partida.mapa) {
+          console.warn('La partida no contiene datos del mapa');
+          partida.mapa = {
+            posicion_actual: { x: 0, y: 0 },
+            estructura_celdas: [],
+            adyacencias: {}
+          };
+        } else if (Array.isArray(partida.mapa)) {
+          console.warn('Adaptando formato de mapa');
+          partida.mapa = {
+            posicion_actual: partida.posicion_actual || { x: 0, y: 0 },
+            estructura_celdas: partida.mapa,
+            adyacencias: partida.adyacencias || {}
+          };
+        }
+
         this.gameStateSubject.next(partida);
+      }),
+      catchError(error => {
+        console.error('Error al cargar partida:', error);
+        return throwError(() => new Error('Error al cargar partida: ' + error.message));
       })
     );
   }
@@ -60,13 +113,40 @@ export class GameService {
       headers: this.authService.obtenerHeadersAuth()
     }).pipe(
       tap((response: any) => {
-        if (response.exito) {
+        if (response.exito && response.partida) {
+          // Aplicar mismas verificaciones y adaptaciones al mapa
+          this.adaptarMapaSiNecesario(response.partida);
           this.gameStateSubject.next(response.partida);
         }
+      }),
+      catchError(error => {
+        console.error('Error al explorar habitación:', error);
+        return throwError(() => new Error('Error al explorar habitación: ' + error.message));
       })
     );
   }
 
+  // Método de ayuda para adaptar formato de mapa
+  private adaptarMapaSiNecesario(partida: any): void {
+    if (!partida.mapa) {
+      console.warn('La partida no contiene datos del mapa');
+      partida.mapa = {
+        posicion_actual: { x: 0, y: 0 },
+        estructura_celdas: [],
+        adyacencias: {}
+      };
+    } else if (Array.isArray(partida.mapa)) {
+      console.warn('Adaptando formato de mapa');
+      partida.mapa = {
+        posicion_actual: partida.posicion_actual || { x: 0, y: 0 },
+        estructura_celdas: partida.mapa,
+        adyacencias: partida.adyacencias || {}
+      };
+    }
+  }
+
+  // Mantener el resto de métodos igual, pero aplicar adaptación en cada uno
+  // Por ejemplo, para resolverCombate:
   // Resolver combate
   resolverCombate(idPartida: number, armaSeleccionada: string, usarItem?: number): Observable<any> {
     return this.http.post(`${this.apiUrl}/partidas/${idPartida}/combate`,
@@ -74,13 +154,20 @@ export class GameService {
       { headers: this.authService.obtenerHeadersAuth() }
     ).pipe(
       tap((response: any) => {
-        if (response.exito) {
+        if (response.exito && response.partida) {
+          this.adaptarMapaSiNecesario(response.partida);
           this.gameStateSubject.next(response.partida);
         }
+      }),
+      catchError(error => {
+        console.error('Error en combate:', error);
+        return throwError(() => new Error('Error en combate: ' + error.message));
       })
     );
   }
 
+  // También actualizar los otros métodos de forma similar...
+  
   // Sacrificar pasajero
   sacrificarPasajero(idPartida: number, accion: string): Observable<any> {
     return this.http.post(`${this.apiUrl}/partidas/${idPartida}/sacrificar`,
