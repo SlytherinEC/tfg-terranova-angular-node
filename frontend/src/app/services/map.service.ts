@@ -19,16 +19,48 @@ export class MapService {
 
   // Obtener mapa para una partida específica
   obtenerMapa(idPartida: number): Observable<HexCell[][]> {
-    return this.http.get<any>(`${this.apiUrl}/${idPartida}`, {
+    return this.http.get<any>(`${this.apiUrl}/partidas/${idPartida}`, {
       headers: this.authService.obtenerHeadersAuth()
     }).pipe(
-      map(response => response.mapa),
+      map(response => {
+        console.log('Respuesta obtenerMapa:', response);
+
+        // Verificar si la respuesta tiene la estructura correcta
+        if (response && response.mapa) {
+          if (Array.isArray(response.mapa)) {
+            // Ya es un array, devolver directamente
+            return response.mapa;
+          } else if (response.mapa.estructura_celdas && Array.isArray(response.mapa.estructura_celdas)) {
+            // Nuevas estructura - extraer estructura_celdas
+            return response.mapa.estructura_celdas;
+          }
+        }
+
+        // Si no hay mapa o tiene una estructura inesperada, generar un mapa básico
+        console.error('Estructura de mapa inválida, generando mapa básico');
+        return this.generarMapaInicialBasico();
+      }),
       catchError(error => {
         console.error('Error al obtener mapa:', error);
         // Devolver un mapa vacío en caso de error
-        return of([]);
+        return of(this.generarMapaInicialBasico());
       })
     );
+  }
+
+  // Generar un mapa básico para casos de error
+  private generarMapaInicialBasico(): HexCell[][] {
+    // Crear un mapa mínimo con solo una celda de inicio
+    return [
+      [{
+        x: 0,
+        y: 0,
+        tipo: 'inicio',
+        explorado: true,
+        puerta_bloqueada: false,
+        codigos_requeridos: 0
+      }]
+    ];
   }
 
   // Guardar cambios en el mapa (por ejemplo, cuando se explora una celda)

@@ -14,6 +14,11 @@ export class AppComponent {
 
   private tokenRefreshService = inject(TokenRefreshService);
 
+  ngOnInit() {
+    console.log('Aplicación Terranova iniciada');
+    // Podemos añadir información de la versión o configuración aquí
+  }
+
   @HostListener('document:click')
   @HostListener('document:keydown')
   @HostListener('document:mousemove')

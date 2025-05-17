@@ -17,7 +17,7 @@ INSERT INTO roles (id_rol, nombre) VALUES
 
 -- Crear tabla usuarios
 CREATE TABLE usuarios (
-  id_usuario INT(11) NOT NULL PRIMARY KEY,
+  id_usuario INT(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
   nombre VARCHAR(50) NOT NULL,
   email VARCHAR(100) NOT NULL,
   contrasena VARCHAR(255) NOT NULL,
@@ -30,8 +30,8 @@ CREATE TABLE usuarios (
 --
 -- Volcado de datos para la tabla usuarios
 --
-INSERT INTO usuarios (id_usuario, nombre, email, contrasena, id_rol, fecha_registro, image) VALUES
-(1, 'SlytherinEC', 'yborges2005@gmail.com', '$2b$10$QUFNqx9wFsOkI8Z0HEx9.uzb29lol8XO61HAy9VF8J/sH3l9r1Swi', 1, '2025-04-13 20:02:15', 'default_user.png');
+INSERT INTO usuarios ( nombre, email, contrasena, id_rol, fecha_registro, image) VALUES
+('SlytherinEC', 'yborges2005@gmail.com', '$2b$10$QUFNqx9wFsOkI8Z0HEx9.uzb29lol8XO61HAy9VF8J/sH3l9r1Swi', 1, '2025-04-13 20:02:15', 'default_user.png');
 
 -- Tabla principal de partidas (normalizada)
 CREATE TABLE partidas (

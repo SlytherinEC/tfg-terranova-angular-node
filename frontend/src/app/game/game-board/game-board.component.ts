@@ -84,15 +84,23 @@ export class GameBoardComponent implements OnInit, OnDestroy {
 
   loadGame(): void {
     this.isLoading = true;
+    console.log('Intentando cargar partida:', this.idPartida);
 
     // Intentar cargar estado guardado
     const loaded = this.gameService.autoLoadGameState(this.idPartida);
 
     if (loaded) {
+      console.log('Partida cargada desde caché local');
+
       // Obtener el estado del juego actualizado
       const state = this.gameService.getGameState();
       if (state) {
         this.gameState = state;
+        console.log('Estado del juego cargado:', this.gameState);
+
+        // Verificar si el mapa tiene la estructura correcta
+        this.verificarEstructuraMapa();
+
         this.checkGameStatus();
       }
 
@@ -104,9 +112,15 @@ export class GameBoardComponent implements OnInit, OnDestroy {
     // Si no hay estado guardado, cargar desde el servidor
     this.gameService.cargarPartida(this.idPartida).subscribe({
       next: (partida) => {
+        console.log('Partida cargada desde servidor:', partida);
         const state = this.gameService.getGameState();
         if (state) {
           this.gameState = state;
+          console.log('Estado del juego establecido:', this.gameState);
+
+
+          // Verificar estructura del mapa
+          this.verificarEstructuraMapa();
         }
 
         this.addLogMessage(`Partida cargada. ${this.getGameStatusMessage()}`);
@@ -115,10 +129,47 @@ export class GameBoardComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         console.error('Error al cargar partida:', err);
-        this.mensaje = 'Error al cargar la partida';
+        this.mensaje = 'Error al cargar la partida: ' + (err.message || 'Error desconocido');
         this.isLoading = false;
       }
     });
+  }
+
+  // Añadir método para verificar y corregir estructura del mapa
+  verificarEstructuraMapa(): void {
+    if (!this.gameState) return;
+
+    console.log('Verificando estructura del mapa...');
+
+    // Si no hay mapa, crear uno vacío
+    if (!this.gameState.mapa) {
+      console.warn('No hay mapa en el estado del juego, creando estructura básica');
+      this.gameState.mapa = {
+        posicion_actual: { x: 0, y: 0 },
+        estructura_celdas: [],
+        adyacencias: {}
+      };
+      return;
+    }
+
+    // Si el mapa es un array, adaptarlo a la nueva estructura
+    if (Array.isArray(this.gameState.mapa)) {
+      console.warn('Mapa en formato array, adaptando a nuevo formato');
+      const estructuraCeldas = this.gameState.mapa;
+      this.gameState = {
+        posicion_actual: this.gameState.posicion_actual || { x: 0, y: 0 },
+        estructura_celdas: estructuraCeldas,
+        adyacencias: this.gameState.adyacencias || {}
+      };
+    }
+
+    // Verificar si hay estructura de celdas
+    if (!this.gameState.mapa.estructura_celdas || !Array.isArray(this.gameState.mapa.estructura_celdas)) {
+      console.warn('Estructura de celdas inválida o ausente, inicializando');
+      this.gameState.mapa.estructura_celdas = [];
+    }
+
+    console.log('Estructura del mapa final:', this.gameState.mapa);
   }
 
   addLogMessage(message: string): void {
@@ -191,6 +242,7 @@ export class GameBoardComponent implements OnInit, OnDestroy {
     }
 
     // Explorar la celda
+    console.log('Explorando celda:', cell);
     this.explorarCelda(cell);
   }
 
