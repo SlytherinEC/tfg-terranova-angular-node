@@ -13,15 +13,18 @@ app.use(cors({
 
 app.use(express.json());
 
+// Rutas de autenticación y usuarios
 app.use('/api/usuarios', require('./routes/usuarios'));
 app.use('/api/admin', require('./routes/admin'));
-// Nuevas rutas refactorizadas
-app.use('/api/game', require('./routes/partidasRoutes'));
+
+// Nueva estructura más modular de rutas del juego
+app.use('/api/game', require('./routes/game')); // Ruta principal del juego
 app.use('/api/game', require('./routes/mapaRoutes'));
 app.use('/api/game', require('./routes/capitanRoutes'));
 app.use('/api/game', require('./routes/inventarioRoutes'));
-// Nueva ruta para el estado de juego
 app.use('/api/game', require('./routes/estadoJuegoRoutes'));
+
+// Ya no es necesario importar partidasRoutes porque está incluido en game.js
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

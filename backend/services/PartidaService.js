@@ -14,14 +14,14 @@ const PartidaService = {
     try {
       // 1. Crear partida básica
       const id_partida = await PartidaModel.crear(id_usuario, dificultad);
-      
+
       // 2. Generar y guardar mapa
       const { mapa, adyacencias } = await MapaService.generarMapaHexagonal();
       await MapaModel.crear(id_partida, mapa, adyacencias);
-      
+
       // 3. Obtener partida completa para devolver
       const partida = await PartidaModel.obtenerPorId(id_partida);
-      
+
       return {
         mensaje: 'Partida creada con éxito',
         partida
@@ -50,15 +50,15 @@ const PartidaService = {
   obtenerPartida: async (id_partida, id_usuario) => {
     try {
       const partida = await PartidaModel.obtenerPorId(id_partida);
-      
+
       if (!partida) {
         throw new Error('Partida no encontrada');
       }
-      
+
       if (partida.id_usuario !== id_usuario) {
         throw new Error('No tienes permiso para acceder a esta partida');
       }
-      
+
       return partida;
     } catch (error) {
       console.error('Error en PartidaService.obtenerPartida:', error);
@@ -73,15 +73,15 @@ const PartidaService = {
     try {
       // 1. Actualizar estado de partida
       await PartidaModel.actualizarEstado(id_partida, resultado);
-      
+
       // 2. Verificar y registrar logros finales
       if (resultado === 'VICTORIA') {
         await this.verificarLogrosFinales(id_partida);
       }
-      
+
       // 3. Obtener partida actualizada
       const partida = await PartidaModel.obtenerPorId(id_partida);
-      
+
       return {
         exito: true,
         fin: true,
@@ -101,23 +101,23 @@ const PartidaService = {
   verificarLogrosFinales: async (id_partida) => {
     try {
       const partida = await PartidaModel.obtenerPorId(id_partida);
-      
+
       if (!partida) return;
-      
+
       const logros = partida.logros || {};
-      
+
       // Verificar logros basados en estadísticas
-      
+
       // Logro PACIFICADOR: no sacrificar pasajeros
       if (partida.pasajeros_sacrificados === 0) {
         logros.PACIFICADOR = true;
       }
-      
+
       // Logro ACUMULADOR: no usar ítems
       if (partida.items_usados === 0) {
         logros.ACUMULADOR = true;
       }
-      
+
       // Verificar logro según dificultad
       switch (partida.dificultad) {
         case 'NORMAL':
@@ -133,10 +133,10 @@ const PartidaService = {
           logros.LOCO = true;
           break;
       }
-      
+
       // Actualizar logros en el estado del juego
       await EstadoJuegoModel.actualizarLogros(id_partida, logros);
-      
+
     } catch (error) {
       console.error('Error en PartidaService.verificarLogrosFinales:', error);
       throw error;
@@ -148,10 +148,10 @@ const PartidaService = {
    */
   calcularRangoFinal: (logros) => {
     if (!logros) return 'CADETE';
-    
+
     // Contar logros obtenidos
     const totalLogros = Object.values(logros).filter(valor => valor === true).length;
-    
+
     // Determinar rango según cantidad de logros
     if (totalLogros >= 9) return 'GENERAL';
     if (totalLogros >= 8) return 'ALMIRANTE';
@@ -159,7 +159,42 @@ const PartidaService = {
     if (totalLogros >= 4) return 'CAPITAN';
     if (totalLogros >= 2) return 'OFICIAL';
     return 'CADETE';
-  }
+  },
+
+  /**
+ * Sacrificar un pasajero
+ * @param {number} id_partida - ID de la partida
+ * @param {number} id_usuario - ID del usuario
+ * @returns {Promise<boolean>} Resultado de la operación
+ */
+  sacrificarPasajero: async (id_partida, id_usuario) => {
+    try {
+      // Verificar que la partida existe y pertenece al usuario
+      const partida = await PartidaModel.obtenerPorId(id_partida);
+
+      if (!partida) {
+        throw new Error('Partida no encontrada');
+      }
+
+      if (partida.id_usuario !== id_usuario) {
+        throw new Error('No tienes permiso para acceder a esta partida');
+      }
+
+      // Verificar que hay pasajeros
+      if (partida.pasajeros <= 0) {
+        throw new Error('No hay pasajeros para sacrificar');
+      }
+
+      // Registrar sacrificio
+      await PartidaModel.registrarSacrificio(id_partida);
+
+      return true;
+    } catch (error) {
+      console.error('Error en PartidaService.sacrificarPasajero:', error);
+      throw error;
+    }
+  },
+
 };
 
 module.exports = PartidaService;
